@@ -62,9 +62,3 @@ This software uses the following open source packages:
 - [Rapier](https://rapier.rs)
 
 > This program's sprites were made using [Aseprite](https://www.aseprite.org/)
-
-## Support
-
-[![Ko-fi](https://img.shields.io/badge/support_me_on_ko--fi-F16061?style=for-the-badge&logo=kofi&logoColor=f5f5f5)](https://ko-fi.com/freehelpdesk)
-
-XMR: `87X4SK6PHr2KWkbw5mXRUXRfK3JLpvukMGrRgatVZRCXPEB6momn2wzVhaiBkbEQYZ4XKMHWoQEL2S2A6Q2xwhKKMubiusQ`
