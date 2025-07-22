@@ -1,7 +1,7 @@
 
 <h1 align="center">
   <br>
-  <a href="https://github.com/freehelpdesk/flappybird"><img src="github/icon-rounded.png" alt="Flappybird" width="200"></a>
+  <a href="https://github.com/BJTMastermind/flappybird"><img src="github/icon-rounded.png" alt="Flappybird" width="200"></a>
   <br>
   Flappybird Revision Project
   <br>
@@ -20,9 +20,8 @@
 
 <p align="center">
   <a href="#how-to-compile">How to Compile</a> •
-  <a href="#download">Download</a> •
-  <a href="#credits">Credits</a> •
-  <a href="https://freehelpdesk.dev/playtest.html">Playtest</a>
+  Download •
+  <a href="#credits">Credits</a>
 </p>
 
 <p align="center">
@@ -36,13 +35,10 @@ To compile and run this Flappybird clone, you must install the [rust toolchain](
 
 ```bash
 # Clone this repository
-$ git clone --recursive https://github.com/freehelpdesk/flappybird
+$ git clone https://github.com/BJTMastermind/flappybird
 
 # Go into the repository
 $ cd flappybird
-
-# Switch to rust nightly
-$ rustup default nightly
 
 # Compile the binary
 $ cargo build --release
@@ -53,7 +49,8 @@ $ cargo build --release
 
 Developers:
 
-- [freehelpdesk](https://github.com/freehelpdesk)
+- [BJTMastermind](https://github.com/BJTMastermind)
+- [freehelpdesk](https://github.com/freehelpdesk) (Upstream Maintainer)
 - [Thatcher Clough](https://github.com/thatcherclough) (Original Swift Co-Developer)
 
 This software uses the following open source packages:
