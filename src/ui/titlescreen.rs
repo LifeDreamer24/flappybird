@@ -196,7 +196,7 @@ fn title_button_system(
                     }
                     TitleScreenButtons::Settings => {
                         println!("Settings button clicked!");
-                        state.set(FlappybirdState::Settings);
+                        // state.set(FlappybirdState::Settings);
                     }
                     TitleScreenButtons::Exit => {
                         println!("Exit button clicked!");
