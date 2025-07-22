@@ -22,15 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use animation::{animate_sprite, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_kira_audio::{Audio, AudioControl};
 use bevy_rapier2d::prelude::*;
+use rand::Rng;
 
 use crate::{
-    world::pipes::{self, Pipe, PipeSegment},
+    world::pipes::{Pipe, PipeSegment},
     FlappybirdState,
 };
 
@@ -52,8 +53,14 @@ pub fn spawn_player(
 ) {
     let primary_window = window_query.get_single().unwrap();
 
-    // Load texture for the bird, can be randomized later
-    let texture = asset_server.load("embedded://sprites/birds/yellow/bird-sheet.png");
+    // Load texture for the bird.
+    let random_bird = rand::thread_rng().gen_range(0..=2);
+    let texture = match random_bird {
+        0 => asset_server.load("embedded://sprites/birds/yellow-bird-sheet.png"),
+        1 => asset_server.load("embedded://sprites/birds/red-bird-sheet.png"),
+        _ => asset_server.load("embedded://sprites/birds/blue-bird-sheet.png"),
+    };
+
     // the sprite sheet has 4 sprites arranged in a row, and they are all 17px x 12px
     let layout = TextureAtlasLayout::from_grid(UVec2::new(17, 12), 4, 1, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
@@ -67,6 +74,9 @@ pub fn spawn_player(
 
     bird_transform.scale = Vec3::splat(3.);
 
+    let player_name = format!("Player{}", SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() % 1000);
+    println!("Player Name: {}", &player_name);
+
     commands.spawn((
         SpriteBundle {
             transform: bird_transform,
@@ -78,7 +88,7 @@ pub fn spawn_player(
             index: animation_indices.first,
         },
         Player {
-            name: "helpdesk".to_string(),
+            name: player_name,
             ..Default::default()
         },
         animation_indices,
