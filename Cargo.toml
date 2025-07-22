@@ -1,4 +1,3 @@
-cargo-features = ["profile-rustflags"]
 [package]
 name = "flappybird"
 version = "0.1.0"
