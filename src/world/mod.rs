@@ -26,7 +26,6 @@ use bevy::prelude::*;
 
 pub mod ground;
 pub mod pipes;
-pub mod sky;
 
 #[derive(Resource)]
 struct SpawnTimer(Timer);

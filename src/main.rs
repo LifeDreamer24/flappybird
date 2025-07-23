@@ -24,15 +24,14 @@ SOFTWARE.
 
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_embedded_assets::EmbeddedAssetPlugin;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_kira_audio::AudioPlugin;
 use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use bevy_rapier2d::prelude::*;
 use player::PlayerPlugin;
+use rand::Rng;
 use ui::titlescreen::TitlescreenPlugin;
 use world::ground::{Ground, GroundPlugin};
 use world::pipes::PipePlugin;
-use world::sky::{Sky, SkyPlugin};
 use world::WorldSpeed;
 
 pub mod player;
@@ -65,7 +64,6 @@ fn main() {
             PlayerPlugin,
             TitlescreenPlugin,
             PipePlugin,
-            SkyPlugin,
             GroundPlugin,
         ))
         .init_state::<FlappybirdState>()
@@ -122,7 +120,11 @@ pub fn setup(
     }
 
     let sky_width = 144.;
-    let sky_texture = asset_server.load("embedded://sprites/world/day-sky.png");
+    let random_sky = rand::thread_rng().gen_range(0..=1);
+    let sky_texture: Handle<Image> = match random_sky {
+        0 => asset_server.load("embedded://sprites/world/day-sky.png"),
+        _ => asset_server.load("embedded://sprites/world/night-sky.png")
+    };
 
     let sky_scale = Vec3::splat(3.);
 
@@ -143,7 +145,6 @@ pub fn setup(
                 },
                 ..Default::default()
             },
-            Sky,
         ));
     }
 }
