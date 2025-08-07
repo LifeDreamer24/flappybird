@@ -28,7 +28,7 @@ jobs:
         run: |
           sed -i '' '/alsa-sys/d' Cargo.toml || true
 
-      # Build static lib from your binary crate (full src tree copy + import rewrite)
+      # Build static lib from your binary crate (full src tree copy + broad import rewrite)
       - name: Prepare iOS lib build
         run: |
           mkdir -p src
@@ -44,25 +44,19 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          # Rewrite imports to match flappy_main nesting (macOS-safe regex)
+          # Broad import rewrite: absolute, relative, grouped (macOS-safe)
           find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 perl -pi -e '
-            # Absolute imports
-            s/\buse\s+crate::player\b/use crate::flappy_main::player/g;
-            s/\buse\s+crate::world\b/use crate::flappy_main::world/g;
-            s/\buse\s+crate::ui\b/use crate::flappy_main::ui/g;
-            s/\buse\s+crate::FlappybirdState\b/use crate::flappy_main::FlappybirdState/g;
+            # Absolute crate imports
+            s/\bcrate::player\b/crate::flappy_main::player/g;
+            s/\bcrate::world\b/crate::flappy_main::world/g;
+            s/\bcrate::ui\b/crate::flappy_main::ui/g;
+            s/\bcrate::FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
 
-            # Grouped imports inside {}
-            s/(?<=\{)player(?=::)/flappy_main::player/g;
-            s/(?<=\{)world(?=::)/flappy_main::world/g;
-            s/(?<=\{)ui(?=::)/flappy_main::ui/g;
-            s/(?<=\{)FlappybirdState/flappy_main::FlappybirdState/g;
-
-            # Relative imports without crate::
-            s/\buse\s+player\b/use crate::flappy_main::player/g;
-            s/\buse\s+world\b/use crate::flappy_main::world/g;
-            s/\buse\s+ui\b/use crate::flappy_main::ui/g;
-            s/\buse\s+FlappybirdState\b/use crate::flappy_main::FlappybirdState/g;
+            # Any unprefixed module references (avoid double-fixing)
+            s/(?<!crate::flappy_main::)player::/crate::flappy_main::player::/g;
+            s/(?<!crate::flappy_main::)world::/crate::flappy_main::world::/g;
+            s/(?<!crate::flappy_main::)ui::/crate::flappy_main::ui::/g;
+            s/(?<!crate::flappy_main::)FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
           '
 
       - name: Build static lib for iOS
