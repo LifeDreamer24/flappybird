@@ -44,16 +44,26 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          # Rewrite imports to match flappy_main nesting
-          find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 sed -i '' \
-            -e 's|use crate::player|use crate::flappy_main::player|g' \
-            -e 's|use crate::world|use crate::flappy_main::world|g' \
-            -e 's|use crate::ui|use crate::flappy_main::ui|g' \
-            -e 's|use crate::FlappybirdState|use crate::flappy_main::FlappybirdState|g' \
-            -e 's|use player|use crate::flappy_main::player|g' \
-            -e 's|use world|use crate::flappy_main::world|g' \
-            -e 's|use ui|use crate::flappy_main::ui|g' \
-            -e 's|use FlappybirdState|use crate::flappy_main::FlappybirdState|g'
+          # Rewrite imports (absolute, relative, and grouped) for flappy_main nesting
+          find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 perl -pi -e '
+            # Absolute imports
+            s/(?<=use\s+)crate::player/crate::flappy_main::player/g;
+            s/(?<=use\s+)crate::world/crate::flappy_main::world/g;
+            s/(?<=use\s+)crate::ui/crate::flappy_main::ui/g;
+            s/(?<=use\s+)crate::FlappybirdState/crate::flappy_main::FlappybirdState/g;
+
+            # Grouped imports inside {}
+            s/(?<=\{)player(?=::)/flappy_main::player/g;
+            s/(?<=\{)world(?=::)/flappy_main::world/g;
+            s/(?<=\{)ui(?=::)/flappy_main::ui/g;
+            s/(?<=\{)FlappybirdState/flappy_main::FlappybirdState/g;
+
+            # Relative imports without crate::
+            s/(?<=use\s+)player/crate::flappy_main::player/g;
+            s/(?<=use\s+)world/crate::flappy_main::world/g;
+            s/(?<=use\s+)ui/crate::flappy_main::ui/g;
+            s/(?<=use\s+)FlappybirdState/crate::flappy_main::FlappybirdState/g;
+          '
 
       - name: Build static lib for iOS
         run: cargo build --lib --target $IOS_TARGET --release
