@@ -21,4 +21,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Setup Python
-    - uses: actions/setup-python@v5.6.0
+      uses: actions/setup-python@v5.6.0
