@@ -28,8 +28,8 @@ jobs:
         run: |
           sed -i '' '/alsa-sys/d' Cargo.toml || true
 
-      # Build static lib from your binary crate (full src tree copy)
-      - name: Build static lib for iOS
+      # Build static lib from your binary crate (full src tree copy + import rewrite)
+      - name: Prepare iOS lib build
         run: |
           mkdir -p src
           if [ ! -f src/lib.rs ]; then
@@ -44,7 +44,15 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          cargo build --lib --target $IOS_TARGET --release
+          # Rewrite imports inside the copied tree to match flappy_main structure
+          find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 sed -i '' \
+            -e 's|use crate::player|use crate::flappy_main::player|g' \
+            -e 's|use crate::world|use crate::flappy_main::world|g' \
+            -e 's|use crate::ui|use crate::flappy_main::ui|g' \
+            -e 's|use crate::FlappybirdState|use crate::flappy_main::FlappybirdState|g'
+
+      - name: Build static lib for iOS
+        run: cargo build --lib --target $IOS_TARGET --release
 
       # Create minimal Xcode project
       - name: Create Xcode project
