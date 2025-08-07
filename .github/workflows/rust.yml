@@ -44,13 +44,13 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          # Rewrite imports (absolute, relative, and grouped) for flappy_main nesting
+          # Rewrite imports to match flappy_main nesting (macOS-safe regex)
           find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 perl -pi -e '
             # Absolute imports
-            s/(?<=use\s+)crate::player/crate::flappy_main::player/g;
-            s/(?<=use\s+)crate::world/crate::flappy_main::world/g;
-            s/(?<=use\s+)crate::ui/crate::flappy_main::ui/g;
-            s/(?<=use\s+)crate::FlappybirdState/crate::flappy_main::FlappybirdState/g;
+            s/\buse\s+crate::player\b/use crate::flappy_main::player/g;
+            s/\buse\s+crate::world\b/use crate::flappy_main::world/g;
+            s/\buse\s+crate::ui\b/use crate::flappy_main::ui/g;
+            s/\buse\s+crate::FlappybirdState\b/use crate::flappy_main::FlappybirdState/g;
 
             # Grouped imports inside {}
             s/(?<=\{)player(?=::)/flappy_main::player/g;
@@ -59,10 +59,10 @@ jobs:
             s/(?<=\{)FlappybirdState/flappy_main::FlappybirdState/g;
 
             # Relative imports without crate::
-            s/(?<=use\s+)player/crate::flappy_main::player/g;
-            s/(?<=use\s+)world/crate::flappy_main::world/g;
-            s/(?<=use\s+)ui/crate::flappy_main::ui/g;
-            s/(?<=use\s+)FlappybirdState/crate::flappy_main::FlappybirdState/g;
+            s/\buse\s+player\b/use crate::flappy_main::player/g;
+            s/\buse\s+world\b/use crate::flappy_main::world/g;
+            s/\buse\s+ui\b/use crate::flappy_main::ui/g;
+            s/\buse\s+FlappybirdState\b/use crate::flappy_main::FlappybirdState/g;
           '
 
       - name: Build static lib for iOS
@@ -106,7 +106,7 @@ jobs:
           EOF
 
           mkdir -p rustlib
-          cp ../target/$IOS_TARGET/release/libflappybird.a rustlib/
+          cp ../target/$IOS_TARGET/release/libflappybird.a rustlib/ || { echo "❌ libflappybird.a not found!"; exit 1; }
 
           xcodebuild -create-xcodeproj -projectName "${{ env.APP_NAME }}"
 
