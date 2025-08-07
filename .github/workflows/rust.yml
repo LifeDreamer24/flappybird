@@ -23,15 +23,26 @@ jobs:
       - name: Install iOS target
         run: rustup target add $IOS_TARGET
 
-      # (Optional) Remove ALSA on iOS
+      # Remove Linux-only deps for iOS (like ALSA)
       - name: Patch Cargo.toml to skip ALSA
         run: |
-          # If alsa-sys is in dependencies, comment it out for iOS
           sed -i '' '/alsa-sys/d' Cargo.toml || true
 
-      # Build Rust as static lib for iOS
-      - name: Build static lib
-        run: cargo build --target $IOS_TARGET --release
+      # Build static lib from your existing binary crate
+      - name: Build static lib for iOS
+        run: |
+          mkdir -p src
+          # Create a temporary lib.rs that reuses your main.rs logic
+          if [ ! -f src/lib.rs ]; then
+            echo "pub mod flappy_main;" > src/lib.rs
+            mkdir -p src/flappy_main
+            cp src/main.rs src/flappy_main/mod.rs
+          fi
+          # Add crate-type to Cargo.toml if missing
+          if ! grep -q "crate-type" Cargo.toml; then
+            echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
+          fi
+          cargo build --lib --target $IOS_TARGET --release
 
       # Create minimal Xcode project
       - name: Create Xcode project
@@ -70,11 +81,9 @@ jobs:
           @end
           EOF
 
-          # Copy Rust lib into project
           mkdir -p rustlib
-          cp ../target/$IOS_TARGET/release/*.a rustlib/
+          cp ../target/$IOS_TARGET/release/libflappybird.a rustlib/
 
-          # Create Xcode project
           xcodebuild -create-xcodeproj -projectName "${{ env.APP_NAME }}"
 
       # Build IPA (unsigned)
@@ -101,7 +110,6 @@ jobs:
           EOF
           )
 
-      # Upload artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
