@@ -28,7 +28,7 @@ jobs:
         run: |
           sed -i '' '/alsa-sys/d' Cargo.toml || true
 
-      # Build static lib from your binary crate (full src tree copy + broad import rewrite)
+      # Prepare iOS build: copy src tree, rename main.rs, and rewrite imports safely
       - name: Prepare iOS lib build
         run: |
           mkdir -p src
@@ -44,21 +44,24 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          # Broad import rewrite: absolute, relative, grouped (macOS-safe)
+          # Rewrite imports ONLY in `use` statements (macOS-safe)
           find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 perl -pi -e '
-            # Absolute crate imports
-            s/\bcrate::player\b/crate::flappy_main::player/g;
-            s/\bcrate::world\b/crate::flappy_main::world/g;
-            s/\bcrate::ui\b/crate::flappy_main::ui/g;
-            s/\bcrate::FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
+            if (/^\s*use\s+/) {
+              # Absolute crate imports
+              s/\bcrate::player\b/crate::flappy_main::player/g;
+              s/\bcrate::world\b/crate::flappy_main::world/g;
+              s/\bcrate::ui\b/crate::flappy_main::ui/g;
+              s/\bcrate::FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
 
-            # Any unprefixed module references (avoid double-fixing)
-            s/(?<!crate::flappy_main::)player::/crate::flappy_main::player::/g;
-            s/(?<!crate::flappy_main::)world::/crate::flappy_main::world::/g;
-            s/(?<!crate::flappy_main::)ui::/crate::flappy_main::ui::/g;
-            s/(?<!crate::flappy_main::)FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
+              # Any unprefixed module references (avoid double-fixing)
+              s/(?<!crate::flappy_main::)player::/crate::flappy_main::player::/g;
+              s/(?<!crate::flappy_main::)world::/crate::flappy_main::world::/g;
+              s/(?<!crate::flappy_main::)ui::/crate::flappy_main::ui::/g;
+              s/(?<!crate::flappy_main::)FlappybirdState\b/crate::flappy_main::FlappybirdState/g;
+            }
           '
 
+      # Build static lib for iOS
       - name: Build static lib for iOS
         run: cargo build --lib --target $IOS_TARGET --release
 
