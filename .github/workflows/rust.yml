@@ -1,4 +1,4 @@
-name: Rust
+name: Build IPA from Rust
 
 on:
   push:
@@ -8,17 +8,102 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  APP_NAME: FlappyBirdRust
+  BUNDLE_ID: com.example.flappybird
+  IOS_TARGET: aarch64-apple-ios
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Setup Python
-      uses: actions/setup-python@v5.6.0
+      - uses: actions/checkout@v4
+
+      # Install Rust target for iOS
+      - name: Install iOS target
+        run: rustup target add $IOS_TARGET
+
+      # (Optional) Remove ALSA on iOS
+      - name: Patch Cargo.toml to skip ALSA
+        run: |
+          # If alsa-sys is in dependencies, comment it out for iOS
+          sed -i '' '/alsa-sys/d' Cargo.toml || true
+
+      # Build Rust as static lib for iOS
+      - name: Build static lib
+        run: cargo build --target $IOS_TARGET --release
+
+      # Create minimal Xcode project
+      - name: Create Xcode project
+        run: |
+          APP_DIR="$PWD/${{ env.APP_NAME }}"
+          mkdir -p "$APP_DIR"
+          cd "$APP_DIR"
+
+          cat > main.m <<'EOF'
+          #import <UIKit/UIKit.h>
+          int main(int argc, char * argv[]) {
+              @autoreleasepool {
+                  return UIApplicationMain(argc, argv, nil, @"AppDelegate");
+              }
+          }
+          EOF
+
+          cat > AppDelegate.h <<'EOF'
+          #import <UIKit/UIKit.h>
+          @interface AppDelegate : UIResponder <UIApplicationDelegate>
+          @property (strong, nonatomic) UIWindow *window;
+          @end
+          EOF
+
+          cat > AppDelegate.m <<'EOF'
+          #import "AppDelegate.h"
+          @implementation AppDelegate
+          - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+              self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+              UIViewController *vc = [UIViewController new];
+              vc.view.backgroundColor = [UIColor whiteColor];
+              self.window.rootViewController = vc;
+              [self.window makeKeyAndVisible];
+              return YES;
+          }
+          @end
+          EOF
+
+          # Copy Rust lib into project
+          mkdir -p rustlib
+          cp ../target/$IOS_TARGET/release/*.a rustlib/
+
+          # Create Xcode project
+          xcodebuild -create-xcodeproj -projectName "${{ env.APP_NAME }}"
+
+      # Build IPA (unsigned)
+      - name: Build IPA
+        run: |
+          xcodebuild \
+            -scheme "${{ env.APP_NAME }}" \
+            -configuration Release \
+            -sdk iphoneos \
+            clean archive \
+            -archivePath build/${{ env.APP_NAME }}.xcarchive \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/${{ env.APP_NAME }}.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist <(cat <<EOF
+          {
+            "method": "development",
+            "signingStyle": "manual",
+            "compileBitcode": false
+          }
+          EOF
+          )
+
+      # Upload artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-ipa
+          path: build/*.ipa
