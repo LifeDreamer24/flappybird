@@ -28,17 +28,19 @@ jobs:
         run: |
           sed -i '' '/alsa-sys/d' Cargo.toml || true
 
-      # Build static lib from your existing binary crate
+      # Build static lib from your binary crate (full src tree copy)
       - name: Build static lib for iOS
         run: |
           mkdir -p src
-          # Create a temporary lib.rs that reuses your main.rs logic
           if [ ! -f src/lib.rs ]; then
             echo "pub mod flappy_main;" > src/lib.rs
             mkdir -p src/flappy_main
-            cp src/main.rs src/flappy_main/mod.rs
+            # Copy the entire source tree so all modules exist
+            cp -r src/* src/flappy_main/
+            # Replace main.rs with mod.rs so it becomes the library entry point
+            mv src/flappy_main/main.rs src/flappy_main/mod.rs
           fi
-          # Add crate-type to Cargo.toml if missing
+          # Ensure Cargo knows to build a staticlib
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
@@ -110,6 +112,7 @@ jobs:
           EOF
           )
 
+      # Upload the IPA artifact
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
