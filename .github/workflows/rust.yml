@@ -44,12 +44,16 @@ jobs:
           if ! grep -q "crate-type" Cargo.toml; then
             echo -e "\n[lib]\nname = \"flappybird\"\ncrate-type = [\"staticlib\"]" >> Cargo.toml
           fi
-          # Rewrite imports inside the copied tree to match flappy_main structure
+          # Rewrite imports to match flappy_main nesting
           find src/flappy_main -type f -name '*.rs' -print0 | xargs -0 sed -i '' \
             -e 's|use crate::player|use crate::flappy_main::player|g' \
             -e 's|use crate::world|use crate::flappy_main::world|g' \
             -e 's|use crate::ui|use crate::flappy_main::ui|g' \
-            -e 's|use crate::FlappybirdState|use crate::flappy_main::FlappybirdState|g'
+            -e 's|use crate::FlappybirdState|use crate::flappy_main::FlappybirdState|g' \
+            -e 's|use player|use crate::flappy_main::player|g' \
+            -e 's|use world|use crate::flappy_main::world|g' \
+            -e 's|use ui|use crate::flappy_main::ui|g' \
+            -e 's|use FlappybirdState|use crate::flappy_main::FlappybirdState|g'
 
       - name: Build static lib for iOS
         run: cargo build --lib --target $IOS_TARGET --release
